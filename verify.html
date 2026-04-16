@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Sevikr Verified Worker</title>
+    <meta name="theme-color" content="#0F172A">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#0F172A,#1E293B,#0F172A);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+        .card{width:100%;max-width:400px;border-radius:22px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);background:#fff}
+        .card-top{background:linear-gradient(135deg,#0F172A,#1E293B,#0F172A);padding:24px}
+        .brand-row{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+        .brand-logo{width:34px;height:34px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
+        .brand-name{font-size:12px;font-weight:800;color:#fff;letter-spacing:1.5px}
+        .brand-sub{font-size:10px;color:rgba(255,255,255,0.45);font-weight:500;margin-top:1px}
+        .live-badge{margin-left:auto;display:flex;align-items:center;gap:4px;background:rgba(16,185,129,0.15);padding:3px 8px;border-radius:6px}
+        .live-dot{width:6px;height:6px;border-radius:3px;background:#10B981;animation:pulse 1.6s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+        .live-text{font-size:9px;font-weight:800;color:#10B981;letter-spacing:0.5px}
+        .holo{height:2px;background:linear-gradient(90deg,transparent,rgba(59,130,246,0.3),rgba(139,92,246,0.3),transparent);margin:12px 0}
+        .profile-row{display:flex;align-items:center;gap:14px}
+        .avatar-wrap{position:relative;flex-shrink:0}
+        .avatar{width:72px;height:72px;border-radius:50%;border:3px solid #3B82F6;object-fit:cover}
+        .avatar-ph{width:72px;height:72px;border-radius:50%;border:3px solid #3B82F6;background:linear-gradient(135deg,#3B82F6,#6366F1);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff}
+        .vdot{position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;border-radius:50%;background:#10B981;border:2.5px solid #1E293B;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+        .pname{font-size:20px;font-weight:800;color:#fff}
+        .pskill{font-size:12px;color:rgba(255,255,255,0.55);font-weight:500;margin-top:3px}
+        .id-row{display:flex;align-items:center;gap:6px;margin-top:8px}
+        .id-badge{background:rgba(59,130,246,0.2);padding:2px 6px;border-radius:4px;font-size:9px;font-weight:800;color:#60A5FA;letter-spacing:0.5px}
+        .id-val{font-size:13px;font-weight:700;color:#94A3B8;letter-spacing:1.2px}
+        .meta-row{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+        .level-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;font-size:10px;font-weight:800;letter-spacing:0.5px}
+        .since-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,0.06);font-size:10px;font-weight:600;color:rgba(255,255,255,0.45)}
+        .realtime-note{font-size:9px;font-weight:600;color:rgba(255,255,255,0.25);text-align:right;margin-top:10px}
+        .trust-section{display:flex;align-items:center;padding:22px;border-bottom:1px solid #F3F4F6;gap:16px}
+        .ring-wrap{width:100px;height:100px;position:relative;flex-shrink:0}
+        .ring-svg{transform:rotate(-90deg)}
+        .ring-bg{stroke:#E5E7EB;fill:transparent}
+        .ring-fill{fill:transparent;stroke-linecap:round;transition:stroke-dashoffset 1s ease}
+        .ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+        .ring-score{font-size:30px;font-weight:900;line-height:1}
+        .ring-of{font-size:11px;font-weight:600;color:#9CA3AF}
+        .trust-title{font-size:16px;font-weight:800;color:#111827;margin-bottom:6px}
+        .trust-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;margin-bottom:6px}
+        .trust-desc{font-size:11px;color:#9CA3AF;font-weight:500;margin-bottom:10px}
+        .mini-stats{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:#374151}
+        .mini-div{width:1px;height:12px;background:#E5E7EB}
+        .card-footer{padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#F0FDF4,#ECFDF5)}
+        .footer-text{font-size:11px;font-weight:600;color:#059669}
+        .powered{margin-top:24px;text-align:center;color:rgba(255,255,255,0.3);font-size:12px}
+        .powered a{color:rgba(255,255,255,0.5);text-decoration:none}
+        .loading{color:#94A3B8;font-size:14px;text-align:center}
+        .err-box{background:#1E293B;border-radius:16px;padding:40px;text-align:center;max-width:380px}
+        .err-box h2{font-size:20px;color:#fff;margin-bottom:8px}
+        .err-box p{color:#94A3B8;font-size:14px;line-height:1.5}
+        .err-box a{color:#3B82F6;text-decoration:none;margin-top:16px;display:inline-block}
+        .spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,0.1);border-top:4px solid #3B82F6;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div class="spinner"></div>
+        <p class="loading">Verifying worker identity...</p>
+    </div>
+    <div class="powered"><a href="https://sevikr.com">sevikr.com</a> — India's Workforce Platform</div>
+
+    <script>
+        const SUPABASE_URL = 'https://nbhkqyhfntfbbsgoatds.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iaGtxeWhmbnRmYmJzZ29hdGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDYwNjYsImV4cCI6MjA4NjM4MjA2Nn0.poHp67DGiqpA78s1Eu04e0Gdbjb1pdZ1PFQg8Sq7KPc';
+
+        const params = new URLSearchParams(window.location.search);
+        const workerId = params.get('id');
+
+        function trustLevel(s) {
+            if (s >= 85) return { l: 'Excellent', c: '#F59E0B', bg: '#FFFBEB', i: '⭐' };
+            if (s >= 65) return { l: 'Good', c: '#10B981', bg: '#ECFDF5', i: '✅' };
+            if (s >= 40) return { l: 'Average', c: '#3B82F6', bg: '#EFF6FF', i: '📈' };
+            return { l: 'Needs Work', c: '#EF4444', bg: '#FEF2F2', i: '⚠️' };
+        }
+
+        async function loadCard() {
+            if (!workerId) { showError('No worker ID provided.'); return; }
+
+            try {
+                const res = await fetch(
+                    `${SUPABASE_URL}/rest/v1/workers?user_id=eq.${workerId}&select=*,user:users!workers_user_id_fkey(name,profile_photo_url)`,
+                    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+                );
+                const data = await res.json();
+                if (!data || data.length === 0) { showError('Worker not found.'); return; }
+                renderCard(data[0]);
+            } catch (e) {
+                showError('Failed to load worker data.');
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('root').innerHTML = `<div class="err-box"><h2>⚠️ Worker Not Found</h2><p>${msg}</p><a href="https://sevikr.com">← Back to Sevikr</a></div>`;
+        }
+
+        function renderCard(w) {
+            const name = w.user?.name || 'Worker';
+            const photo = w.user?.profile_photo_url || '';
+            const skill = w.category || 'Skilled Worker';
+            const exp = w.experience_years || 0;
+            const uid = w.user_id || '';
+            const wid = uid ? 'SVK-' + uid.replace(/-/g, '').slice(-6).toUpperCase() : 'SVK-000000';
+            const score = w.trust_score || 0;
+            const t = trustLevel(score);
+            const isNew = score === 0;
+            const rAvg = (w.rating_average || 0).toFixed(1);
+            const rCount = w.rating_count || 0;
+            const jobs = w.total_completed_works || 0;
+            const created = w.created_at ? new Date(w.created_at) : null;
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const since = created ? months[created.getMonth()] + ' ' + created.getFullYear() : '';
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            const pct = Math.round((score / 100) * 283);
+            const init = name.charAt(0).toUpperCase();
+            const reliability = w.attendance_rate || 0;
+
+            const avatarHtml = photo
+                ? `<img class="avatar" src="${photo}" alt="${name}" onerror="this.outerHTML='<div class=avatar-ph>${init}</div>'">`
+                : `<div class="avatar-ph">${init}</div>`;
+
+            document.getElementById('root').innerHTML = `
+            <div class="card">
+                <div class="card-top">
+                    <div class="brand-row">
+                        <div class="brand-logo">🏗️</div>
+                        <div><div class="brand-name">SEVIKR PRO</div><div class="brand-sub">Verified Worker Identity</div></div>
+                        <div class="live-badge"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
+                    </div>
+                    <div class="holo"></div>
+                    <div class="profile-row">
+                        <div class="avatar-wrap">${avatarHtml}<div class="vdot">✓</div></div>
+                        <div>
+                            <div class="pname">${name}</div>
+                            <div class="pskill">${skill} • ${exp} yrs experience</div>
+                            <div class="id-row"><span class="id-badge">ID</span><span class="id-val">${wid}</span></div>
+                        </div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="level-pill" style="background:${t.c}20;color:${t.c}">
+                            ${t.i} ${isNew ? 'NEW' : t.l.toUpperCase()}
+                        </div>
+                        ${since ? `<div class="since-pill">📅 Since ${since}</div>` : ''}
+                    </div>
+                    <div class="realtime-note">🔴 Live data as of ${dateStr} • ${timeStr}</div>
+                </div>
+                <div class="trust-section">
+                    <div class="ring-wrap">
+                        <svg class="ring-svg" width="100" height="100" viewBox="0 0 100 100">
+                            <circle class="ring-bg" cx="50" cy="50" r="45" stroke-width="9"/>
+                            ${!isNew ? `<circle class="ring-fill" cx="50" cy="50" r="45" stroke-width="9" stroke="${t.c}" stroke-dasharray="283" stroke-dashoffset="${283 - pct}"/>` : ''}
+                        </svg>
+                        <div class="ring-center">
+                            ${isNew ? '<div style="font-size:16px;font-weight:800;color:#9CA3AF">New</div>' : `<div class="ring-score" style="color:${t.c}">${score}</div><div class="ring-of">/100</div>`}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="trust-title">Reputation Score</div>
+                        <div class="trust-badge" style="background:${t.bg};color:${t.c}">${t.i} ${isNew ? 'New Worker' : t.l}</div>
+                        <div class="trust-desc">${isNew ? 'New worker — building reputation' : 'Based on reviews, reliability & risk'}</div>
+                        ${!isNew ? `<div class="mini-stats"><span>⭐ ${rAvg}</span><span class="mini-div"></span><span>💼 ${jobs} job${jobs !== 1 ? 's' : ''}</span><span class="mini-div"></span><span>📝 ${rCount} review${rCount !== 1 ? 's' : ''}</span></div>` : ''}
+                    </div>
+                </div>
+                <div class="card-footer"><span>🛡️</span><span class="footer-text">✓ Real-time verified by Sevikr Trust Engine™</span></div>
+            </div>`;
+            document.title = name + ' — Sevikr Verified ID';
+        }
+
+        loadCard();
+    </script>
+</body>
+</html>
