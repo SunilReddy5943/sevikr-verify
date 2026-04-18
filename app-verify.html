@@ -318,10 +318,11 @@
             return 'SEVK-' + hex.slice(0, 3) + hex.slice(-3);
         }
 
-        function getTrustConfig(score) {
-            if (score >= 90) return { label: 'Top Rated', color: '#B45309', bg: '#FEF3C7', icon: '🏆' };
-            if (score >= 70) return { label: 'Trusted', color: '#059669', bg: '#D1FAE5', icon: '✅' };
-            if (score >= 50) return { label: 'Rising', color: '#2563EB', bg: '#DBEAFE', icon: '📈' };
+        function getTrustConfig(score, isNew) {
+            if (isNew) return { label: 'New Worker', color: '#6B7280', bg: '#F3F4F6', icon: '🆕' };
+            if (score >= 85) return { label: 'Top Rated', color: '#B45309', bg: '#FEF3C7', icon: '🏆' };
+            if (score >= 65) return { label: 'Trusted', color: '#059669', bg: '#D1FAE5', icon: '✅' };
+            if (score >= 40) return { label: 'Rising', color: '#2563EB', bg: '#DBEAFE', icon: '📈' };
             return { label: 'Needs Improvement', color: '#D97706', bg: '#FEF3C7', icon: '⚠️' };
         }
 
@@ -373,15 +374,11 @@
                 const users = await fetchFromSupabase('users', `id=eq.${userId}&select=name,phone,profile_photo_url,created_at`);
                 const userData = users?.[0] || {};
 
-                // Fetch trust score
-                const trustScore = worker.trust_score ?? 100;
-                const trustCfg = getTrustConfig(trustScore);
-
-                // Fetch job count (graceful if table missing)
+                // Fetch jobs count
                 const crew = await fetchFromSupabase('crew_members', `worker_id=eq.${userId}&select=id,status`);
                 const jobCount = (crew || []).filter(c => c.status === 'ACTIVE' || c.status === 'COMPLETED').length;
 
-                // Fetch ratings (graceful if tables missing)
+                // Fetch ratings
                 const reviews = await fetchFromSupabase('worker_reviews', `worker_id=eq.${userId}&select=rating`);
                 const coreReviews = await fetchFromSupabase('reviews', `worker_id=eq.${userId}&select=rating`);
                 const allRatings = [
@@ -392,15 +389,46 @@
                     ? (allRatings.reduce((s, r) => s + r, 0) / allRatings.length).toFixed(1)
                     : '—';
 
-                // Fetch attendance for reliability (graceful if table missing)
-                const att = await fetchFromSupabase('attendance', `worker_id=eq.${userId}&select=status`);
-                let reliability = 0;
-                if (att && att.length > 0) {
-                    const present = att.filter(a => ['PRESENT','OVERTIME','HALF_DAY'].includes((a.status||'').toUpperCase())).length;
-                    const absent = att.filter(a => (a.status||'').toUpperCase() === 'ABSENT').length;
-                    const total = present + absent;
-                    reliability = total > 0 ? Math.round((present / total) * 100) : 0;
+                // Compute trust score same as app: Reviews 50%, Jobs 30%, Risk 20%
+                // Fetch active reports
+                const reports = await fetchFromSupabase('reports', `reported_user_id=eq.${userId}&select=id,status`);
+                const activeReports = (reports || []).filter(r => ['PENDING','UNDER_REVIEW','pending','under_review'].includes(r.status)).length;
+
+                const totalReviews = allRatings.length;
+                const avgRatingNum = totalReviews > 0 ? allRatings.reduce((s, r) => s + r, 0) / totalReviews : 0;
+                const isNew = totalReviews === 0 && jobCount === 0;
+
+                // Review score (0-100)
+                let reviewScore = 0;
+                if (totalReviews > 0) {
+                    const base = Math.max(0, Math.min(100, ((avgRatingNum - 1) / 4) * 100));
+                    let conf = 1.0;
+                    if (totalReviews <= 1) conf = 0.7;
+                    else if (totalReviews <= 2) conf = 0.8;
+                    else if (totalReviews <= 4) conf = 0.9;
+                    else if (totalReviews >= 10) conf = 1.05;
+                    reviewScore = Math.round(Math.min(100, base * conf));
                 }
+
+                // Jobs score (0-100)
+                let jobsScore = 0;
+                if (jobCount > 0) {
+                    jobsScore = Math.round(Math.min(100, 30 * Math.log10(1 + jobCount) + 15 * Math.sqrt(jobCount)));
+                }
+
+                // Risk score (0-100)
+                let riskScore = 100;
+                if (activeReports === 1) riskScore = 60;
+                else if (activeReports === 2) riskScore = 30;
+                else if (activeReports >= 3) riskScore = 0;
+
+                // Final weighted score
+                let trustScore = 0;
+                if (!isNew) {
+                    trustScore = Math.round(reviewScore * 0.50 + jobsScore * 0.30 + riskScore * 0.20);
+                    trustScore = Math.max(0, Math.min(100, trustScore));
+                }
+                const trustCfg = getTrustConfig(trustScore, isNew);
 
                 // Member since
                 let memberSince = '';
@@ -431,7 +459,7 @@
                         <div class="card-top">
                             <div class="card-logo-row">
                                 <div class="card-logo">
-                                    <span style="font-size:20px;font-weight:900;color:#2563EB">S</span>
+                                    <img src="sevikr-icon.png" alt="Sevikr" style="width:28px;height:28px" />
                                 </div>
                                 <div>
                                     <div class="card-brand">SEVIKR</div>
@@ -492,16 +520,16 @@
                                 <div class="trust-level-badge" style="background:${trustCfg.bg};color:${trustCfg.color}">
                                     ${trustCfg.icon} ${trustCfg.label}
                                 </div>
-                                <div class="trust-desc">Based on reviews, reliability & risk</div>
+                                <div class="trust-desc">${isNew ? 'New worker — no work history yet' : 'Based on reviews, jobs & reports'}</div>
                                 <div class="trust-mini-stats">
                                     <span style="color:#F59E0B">⭐</span>
-                                    <span class="mini-value">${avgRating}</span>
+                                    <span class="mini-value">${totalReviews > 0 ? avgRating : '—'}</span>
                                     <span class="mini-divider"></span>
                                     <span style="color:#3B82F6">💼</span>
                                     <span class="mini-value">${jobCount} job${jobCount !== 1 ? 's' : ''}</span>
                                     <span class="mini-divider"></span>
-                                    <span style="color:#10B981">🛡️</span>
-                                    <span class="mini-value">${reliability}%</span>
+                                    <span style="color:#10B981">💬</span>
+                                    <span class="mini-value">${totalReviews} review${totalReviews !== 1 ? 's' : ''}</span>
                                 </div>
                             </div>
                         </div>
