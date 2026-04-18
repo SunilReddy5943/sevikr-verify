@@ -511,8 +511,11 @@
                                         transform="rotate(-90 ${ringSize/2} ${ringSize/2})"/>
                                 </svg>
                                 <div class="ring-center">
-                                    <div class="ring-score" style="color:${trustCfg.color}">${trustScore}</div>
-                                    <div class="ring-of">/100</div>
+                                    ${isNew
+                                        ? `<div class="ring-score" style="color:${trustCfg.color};font-size:20px">New</div>`
+                                        : `<div class="ring-score" style="color:${trustCfg.color}">${trustScore}</div>
+                                           <div class="ring-of">/100</div>`
+                                    }
                                 </div>
                             </div>
                             <div>
