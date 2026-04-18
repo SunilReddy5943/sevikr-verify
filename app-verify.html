@@ -374,17 +374,13 @@
                 const users = await fetchFromSupabase('users', `id=eq.${userId}&select=name,phone,profile_photo_url,created_at`);
                 const userData = users?.[0] || {};
 
-                // Fetch jobs count
-                const crew = await fetchFromSupabase('crew_members', `worker_id=eq.${userId}&select=id,status`);
-                const jobCount = (crew || []).filter(c => c.status === 'ACTIVE' || c.status === 'COMPLETED').length;
+                // Fetch completed jobs from deal_requests
+                const completedJobs = await fetchFromSupabase('deal_requests', `worker_id=eq.${userId}&work_status=eq.COMPLETED&select=id`);
+                const jobCount = (completedJobs || []).length;
 
-                // Fetch ratings
-                const reviews = await fetchFromSupabase('worker_reviews', `worker_id=eq.${userId}&select=rating`);
-                const coreReviews = await fetchFromSupabase('reviews', `worker_id=eq.${userId}&select=rating`);
-                const allRatings = [
-                    ...((reviews || []).map(r => r.rating).filter(Boolean)),
-                    ...((coreReviews || []).map(r => r.rating).filter(Boolean)),
-                ];
+                // Fetch ratings from deal_reviews (the actual reviews table)
+                const dealReviews = await fetchFromSupabase('deal_reviews', `worker_id=eq.${userId}&select=rating`);
+                const allRatings = (dealReviews || []).map(r => r.rating).filter(Boolean);
                 const avgRating = allRatings.length > 0
                     ? (allRatings.reduce((s, r) => s + r, 0) / allRatings.length).toFixed(1)
                     : '—';
