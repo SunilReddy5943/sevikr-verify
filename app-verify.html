@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sevikr Worker Verification</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F0F2F5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Security Banner */
+        .security-banner {
+            width: 100%;
+            background: linear-gradient(135deg, #0052CC 0%, #2563EB 100%);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .security-banner svg { flex-shrink: 0; }
+        .security-banner-text {
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .container {
+            max-width: 420px;
+            width: 100%;
+            padding: 16px;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            gap: 16px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #E5E7EB;
+            border-top-color: #3B82F6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: #6B7280; font-size: 14px; font-weight: 500; }
+
+        /* Error */
+        .error-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px 24px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            margin-top: 32px;
+        }
+        .error-icon { font-size: 48px; margin-bottom: 12px; }
+        .error-title { font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 8px; }
+        .error-desc { font-size: 14px; color: #6B7280; line-height: 1.5; }
+
+        /* Card */
+        .id-card {
+            background: white;
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(15,23,42,0.15);
+            margin-top: 16px;
+        }
+        .card-top {
+            background: linear-gradient(135deg, #0F172A, #1E293B, #0F172A);
+            padding: 22px;
+            padding-bottom: 18px;
+        }
+        .card-logo-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .card-logo {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .card-logo img { width: 28px; height: 28px; }
+        .card-brand { font-size: 12px; font-weight: 800; color: white; letter-spacing: 1.5px; }
+        .card-sub-brand { font-size: 10px; color: rgba(255,255,255,0.45); font-weight: 500; margin-top: 1px; }
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(16,185,129,0.15);
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-left: auto;
+        }
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 3px;
+            background: #10B981;
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .live-text { font-size: 9px; font-weight: 800; color: #10B981; letter-spacing: 0.5px; }
+
+        .holo-stripe {
+            height: 2px;
+            margin: 10px 0;
+            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.08), rgba(139,92,246,0.08), transparent);
+            border-radius: 1px;
+        }
+
+        .profile-row { display: flex; align-items: center; }
+        .avatar-wrap { position: relative; flex-shrink: 0; }
+        .avatar {
+            width: 68px;
+            height: 68px;
+            border-radius: 34px;
+            border: 3px solid #3B82F6;
+            object-fit: cover;
+        }
+        .avatar-placeholder {
+            width: 68px;
+            height: 68px;
+            border-radius: 34px;
+            background: linear-gradient(135deg, #3B82F6, #6366F1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 800;
+            color: white;
+        }
+        .verified-dot {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 22px;
+            height: 22px;
+            border-radius: 11px;
+            background: #10B981;
+            border: 2.5px solid #1E293B;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .profile-info { margin-left: 14px; flex: 1; }
+        .card-name { font-size: 20px; font-weight: 800; color: white; letter-spacing: -0.3px; }
+        .card-skill { font-size: 12px; color: rgba(255,255,255,0.55); font-weight: 500; margin-top: 3px; }
+        .card-id-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+        .card-id-badge {
+            background: rgba(59,130,246,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 800;
+            color: #60A5FA;
+            letter-spacing: 0.5px;
+        }
+        .card-id-value { font-size: 13px; font-weight: 700; color: #94A3B8; letter-spacing: 1.2px; }
+
+        .card-meta-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+        .level-pill {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+        .member-pill {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.06);
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.45);
+        }
+        .watermark-time {
+            font-size: 9px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.15);
+            text-align: right;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Trust Score Section */
+        .trust-section {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #F3F4F6;
+        }
+        .ring-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        .ring-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .ring-score { font-size: 30px; font-weight: 900; }
+        .ring-of { font-size: 11px; font-weight: 600; color: #9CA3AF; margin-top: -2px; }
+        .trust-title { font-size: 16px; font-weight: 800; color: #111827; margin-bottom: 6px; }
+        .trust-level-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .trust-desc { font-size: 11px; color: #9CA3AF; font-weight: 500; line-height: 15px; margin-bottom: 8px; }
+        .trust-mini-stats {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .mini-value { font-size: 11px; font-weight: 700; color: #374151; }
+        .mini-divider { width: 1px; height: 12px; background: #E5E7EB; }
+
+        /* Verified timestamp */
+        .verified-bar {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .verified-bar-text { font-size: 12px; font-weight: 600; color: #166534; }
+        .verified-bar-time { font-size: 11px; color: #6B7280; margin-left: auto; }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 24px 16px;
+            color: #9CA3AF;
+            font-size: 11px;
+        }
+        .footer a { color: #3B82F6; text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <!-- Security Banner -->
+    <div class="security-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+        </svg>
+        <span class="security-banner-text">SEVIKR OFFICIAL VERIFICATION</span>
+    </div>
+
+    <div class="container">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <span class="loading-text">Verifying worker identity...</span>
+        </div>
+
+        <div id="error" style="display:none;">
+            <div class="error-card">
+                <div class="error-icon">⚠️</div>
+                <div class="error-title">Verification Failed</div>
+                <div class="error-desc" id="error-text">Unable to verify this worker. The ID may be invalid or the worker profile may have been deactivated.</div>
+            </div>
+        </div>
+
+        <div id="card" style="display:none;">
+            <!-- Card rendered by JS -->
+        </div>
+    </div>
+
+    <script>
+        // Supabase config — same backend as the app
+        const SUPABASE_URL = 'https://lhbpyqbiszfragzkffsd.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxoYnB5cWJpc3pmcmFnemtmZnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3NjI3NjIsImV4cCI6MjA1OTMzODc2Mn0.JxaCbO1VWtIl8pJBaObxbK8_TkcVNPTIXlBH7VKOZiI';
+
+        function generateSevikrId(userId) {
+            const hex = userId.replace(/-/g, '').toUpperCase();
+            return 'SEVK-' + hex.slice(0, 3) + hex.slice(-3);
+        }
+
+        function getTrustConfig(score) {
+            if (score >= 90) return { label: 'Top Rated', color: '#B45309', bg: '#FEF3C7', icon: '🏆' };
+            if (score >= 70) return { label: 'Trusted', color: '#059669', bg: '#D1FAE5', icon: '✅' };
+            if (score >= 50) return { label: 'Rising', color: '#2563EB', bg: '#DBEAFE', icon: '📈' };
+            return { label: 'Needs Improvement', color: '#D97706', bg: '#FEF3C7', icon: '⚠️' };
+        }
+
+        async function fetchFromSupabase(table, query) {
+            const url = `${SUPABASE_URL}/rest/v1/${table}?${query}`;
+            const res = await fetch(url, {
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                }
+            });
+            return res.json();
+        }
+
+        async function verify() {
+            const params = new URLSearchParams(window.location.search);
+            const userId = params.get('id');
+
+            if (!userId) {
+                showError('No worker ID provided. Please scan a valid Sevikr QR code.');
+                return;
+            }
+
+            try {
+                // Fetch worker profile
+                const workers = await fetchFromSupabase('workers', `user_id=eq.${userId}&select=*`);
+                if (!workers || workers.length === 0) {
+                    showError('Worker not found. This ID may be invalid.');
+                    return;
+                }
+                const worker = workers[0];
+
+                // Fetch user data
+                const users = await fetchFromSupabase('users', `id=eq.${userId}&select=name,phone,profile_photo_url,created_at`);
+                const userData = users?.[0] || {};
+
+                // Fetch trust score
+                const trustScore = worker.trust_score ?? 100;
+                const trustCfg = getTrustConfig(trustScore);
+
+                // Fetch job count
+                const crew = await fetchFromSupabase('crew_members', `worker_id=eq.${userId}&select=id,status&or=(status.eq.ACTIVE,status.eq.COMPLETED)`);
+                const jobCount = (crew || []).length;
+
+                // Fetch ratings
+                const reviews = await fetchFromSupabase('worker_reviews', `worker_id=eq.${userId}&select=rating`);
+                const coreReviews = await fetchFromSupabase('reviews', `worker_id=eq.${userId}&select=rating`);
+                const allRatings = [
+                    ...((reviews || []).map(r => r.rating).filter(Boolean)),
+                    ...((coreReviews || []).map(r => r.rating).filter(Boolean)),
+                ];
+                const avgRating = allRatings.length > 0
+                    ? (allRatings.reduce((s, r) => s + r, 0) / allRatings.length).toFixed(1)
+                    : '—';
+
+                // Fetch attendance for reliability
+                const att = await fetchFromSupabase('attendance', `worker_id=eq.${userId}&select=status`);
+                let reliability = 0;
+                if (att && att.length > 0) {
+                    const present = att.filter(a => ['PRESENT','OVERTIME','HALF_DAY'].includes((a.status||'').toUpperCase())).length;
+                    const absent = att.filter(a => (a.status||'').toUpperCase() === 'ABSENT').length;
+                    const total = present + absent;
+                    reliability = total > 0 ? Math.round((present / total) * 100) : 0;
+                }
+
+                // Member since
+                let memberSince = '';
+                if (userData.created_at) {
+                    const d = new Date(userData.created_at);
+                    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    memberSince = `${months[d.getMonth()]} ${d.getFullYear()}`;
+                }
+
+                const workerId = generateSevikrId(userId);
+                const skill = worker.primary_skill || worker.category || 'Worker';
+                const exp = worker.years_experience || worker.experience_years || 0;
+                const name = userData.name || 'Worker';
+                const initial = name.charAt(0).toUpperCase();
+                const photo = userData.profile_photo_url;
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                // Ring SVG
+                const ringSize = 100, strokeW = 9;
+                const radius = (ringSize - strokeW) / 2;
+                const circ = 2 * Math.PI * radius;
+                const offset = circ - (trustScore / 100) * circ;
+
+                document.getElementById('card').innerHTML = `
+                    <div class="id-card">
+                        <div class="card-top">
+                            <div class="card-logo-row">
+                                <div class="card-logo">
+                                    <span style="font-size:20px;font-weight:900;color:#2563EB">S</span>
+                                </div>
+                                <div>
+                                    <div class="card-brand">SEVIKR</div>
+                                    <div class="card-sub-brand">Verified Worker Identity</div>
+                                </div>
+                                <div class="live-badge">
+                                    <div class="live-dot"></div>
+                                    <span class="live-text">LIVE</span>
+                                </div>
+                            </div>
+                            <div class="holo-stripe"></div>
+                            <div class="profile-row">
+                                <div class="avatar-wrap">
+                                    ${photo
+                                        ? `<img class="avatar" src="${photo}" alt="${name}" />`
+                                        : `<div class="avatar-placeholder">${initial}</div>`
+                                    }
+                                    <div class="verified-dot">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                                    </div>
+                                </div>
+                                <div class="profile-info">
+                                    <div class="card-name">${name}</div>
+                                    <div class="card-skill">${skill} • ${exp} yrs experience</div>
+                                    <div class="card-id-row">
+                                        <span class="card-id-badge">ID</span>
+                                        <span class="card-id-value">${workerId}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-meta-row">
+                                <div class="level-pill" style="background:${trustCfg.color}20;color:${trustCfg.color}">
+                                    ${trustCfg.icon} ${trustCfg.label.toUpperCase()}
+                                </div>
+                                ${memberSince ? `<div class="member-pill">📅 Since ${memberSince}</div>` : ''}
+                            </div>
+                            <div class="watermark-time">${dateStr} • ${timeStr}</div>
+                        </div>
+
+                        <div class="trust-section">
+                            <div class="ring-container">
+                                <svg width="${ringSize}" height="${ringSize}">
+                                    <circle cx="${ringSize/2}" cy="${ringSize/2}" r="${radius}"
+                                        stroke="#E5E7EB" stroke-width="${strokeW}" fill="transparent"/>
+                                    <circle cx="${ringSize/2}" cy="${ringSize/2}" r="${radius}"
+                                        stroke="${trustCfg.color}" stroke-width="${strokeW}" fill="transparent"
+                                        stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+                                        stroke-linecap="round"
+                                        transform="rotate(-90 ${ringSize/2} ${ringSize/2})"/>
+                                </svg>
+                                <div class="ring-center">
+                                    <div class="ring-score" style="color:${trustCfg.color}">${trustScore}</div>
+                                    <div class="ring-of">/100</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="trust-title">Reputation Score</div>
+                                <div class="trust-level-badge" style="background:${trustCfg.bg};color:${trustCfg.color}">
+                                    ${trustCfg.icon} ${trustCfg.label}
+                                </div>
+                                <div class="trust-desc">Based on reviews, reliability & risk</div>
+                                <div class="trust-mini-stats">
+                                    <span style="color:#F59E0B">⭐</span>
+                                    <span class="mini-value">${avgRating}</span>
+                                    <span class="mini-divider"></span>
+                                    <span style="color:#3B82F6">💼</span>
+                                    <span class="mini-value">${jobCount} job${jobCount !== 1 ? 's' : ''}</span>
+                                    <span class="mini-divider"></span>
+                                    <span style="color:#10B981">🛡️</span>
+                                    <span class="mini-value">${reliability}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="verified-bar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.5">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            <path d="M9 12l2 2 4-4"/>
+                        </svg>
+                        <span class="verified-bar-text">Identity Verified</span>
+                        <span class="verified-bar-time">${dateStr} ${timeStr}</span>
+                    </div>
+
+                    <div class="footer">
+                        Verified by <a href="https://sevikr.com">Sevikr</a> • Your Everyday Service Partner
+                    </div>
+                `;
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('card').style.display = 'block';
+
+            } catch (err) {
+                console.error('Verification error:', err);
+                showError('An error occurred during verification. Please try again.');
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error-text').textContent = msg;
+            document.getElementById('error').style.display = 'block';
+        }
+
+        verify();
+    </script>
+</body>
+</html>
