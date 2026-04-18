@@ -309,9 +309,9 @@
     </div>
 
     <script>
-        // Supabase config — same backend as the app
-        const SUPABASE_URL = 'https://lhbpyqbiszfragzkffsd.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxoYnB5cWJpc3pmcmFnemtmZnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3NjI3NjIsImV4cCI6MjA1OTMzODc2Mn0.JxaCbO1VWtIl8pJBaObxbK8_TkcVNPTIXlBH7VKOZiI';
+        // Supabase config — Sevikr app's backend
+        const SUPABASE_URL = 'https://kdmpfdaxvtmpwyrndovs.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbXBmZGF4dnRtcHd5cm5kb3ZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Mjc3NTMsImV4cCI6MjA4NTEwMzc1M30.LBfqhinPnFrNsTGMY0164wN_7MqbVzCsyi7SXnTcqzY';
 
         function generateSevikrId(userId) {
             const hex = userId.replace(/-/g, '').toUpperCase();
@@ -326,14 +326,29 @@
         }
 
         async function fetchFromSupabase(table, query) {
-            const url = `${SUPABASE_URL}/rest/v1/${table}?${query}`;
-            const res = await fetch(url, {
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+            try {
+                const url = `${SUPABASE_URL}/rest/v1/${table}?${query}`;
+                const res = await fetch(url, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    }
+                });
+                if (!res.ok) {
+                    console.warn(`[Verify] ${table} query failed:`, res.status, res.statusText);
+                    return [];
                 }
-            });
-            return res.json();
+                const data = await res.json();
+                // Supabase returns an object with error if something went wrong
+                if (data && data.message) {
+                    console.warn(`[Verify] ${table} error:`, data.message);
+                    return [];
+                }
+                return data;
+            } catch (e) {
+                console.warn(`[Verify] ${table} fetch error:`, e);
+                return [];
+            }
         }
 
         async function verify() {
@@ -362,11 +377,11 @@
                 const trustScore = worker.trust_score ?? 100;
                 const trustCfg = getTrustConfig(trustScore);
 
-                // Fetch job count
-                const crew = await fetchFromSupabase('crew_members', `worker_id=eq.${userId}&select=id,status&or=(status.eq.ACTIVE,status.eq.COMPLETED)`);
-                const jobCount = (crew || []).length;
+                // Fetch job count (graceful if table missing)
+                const crew = await fetchFromSupabase('crew_members', `worker_id=eq.${userId}&select=id,status`);
+                const jobCount = (crew || []).filter(c => c.status === 'ACTIVE' || c.status === 'COMPLETED').length;
 
-                // Fetch ratings
+                // Fetch ratings (graceful if tables missing)
                 const reviews = await fetchFromSupabase('worker_reviews', `worker_id=eq.${userId}&select=rating`);
                 const coreReviews = await fetchFromSupabase('reviews', `worker_id=eq.${userId}&select=rating`);
                 const allRatings = [
@@ -377,7 +392,7 @@
                     ? (allRatings.reduce((s, r) => s + r, 0) / allRatings.length).toFixed(1)
                     : '—';
 
-                // Fetch attendance for reliability
+                // Fetch attendance for reliability (graceful if table missing)
                 const att = await fetchFromSupabase('attendance', `worker_id=eq.${userId}&select=status`);
                 let reliability = 0;
                 if (att && att.length > 0) {
